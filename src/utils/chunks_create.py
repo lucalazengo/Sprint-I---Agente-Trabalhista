@@ -10,7 +10,7 @@ ESTRATÉGIA DE CHUNKING:
 - Preservação do contexto hierárquico completo
 - Metadados estruturados para recuperação eficiente
 
-Autor: Sistema de Processamento Legal
+Autor: Garden Solutions
 """
 
 import os
