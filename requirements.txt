@@ -1,0 +1,22 @@
+# Core dependencies for RAG Hybrid Search System
+flask>=3.0.0
+groq>=0.4.0
+python-dotenv>=1.0.0
+
+# ML and NLP libraries
+numpy>=1.24.0
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.0
+rank-bm25>=0.2.2
+nltk>=3.8.1
+
+# Data processing
+pandas>=2.0.0
+PyPDF2>=3.0.0
+
+# xAI SDK (optional, for api_test.py)
+xai-sdk>=0.1.0
+
+# Utilities
+pathlib2>=2.3.7; python_version < '3.4'
+
