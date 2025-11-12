@@ -31,25 +31,25 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# --- Configuração de Caminhos (ATUALIZADA) ---
+# --- Configuração de Caminhos  ---
 BASE_DIR = r'/Users/universo369/Documents/UNIVERSO_369/U369_root/GARDEN SOLUTION/adicao_contabilidade/Sprint-I---Agente-Trabalhista'
 MODELO_EMBEDDING = 'BAAI/bge-m3'
 
-# (NOVOS) Caminhos dos artefatos
-PATH_BM25_INDEX = os.path.join(BASE_DIR, 'data', 'indices', 'clt_bm25_bge-m3.pkl')
-PATH_CHROMA_DB = os.path.join(BASE_DIR, 'data', 'indices', 'chroma_db_bge_m3')
+#  Caminhos dos artefatos
+PATH_BM25_INDEX = os.path.join(BASE_DIR, 'data', 'processed_data','indices', 'clt_bm25_bge-m3.pkl')
+PATH_CHROMA_DB = os.path.join(BASE_DIR, 'data', 'processed_data','indices', 'chroma_db_bge_m3')
 CHROMA_COLLECTION_NAME = "clt_bge_m3"
-PATH_ENV_FILE = os.path.join(BASE_DIR, 'secrets', '.env')
+PATH_ENV_FILE = os.path.join(BASE_DIR, 'src','backend' , 'secrets', '.env')
 
 # (IMPORTANTE) Precisamos do JSON original para o BM25 e como mapeamento
-PATH_MAPPING_FILE = os.path.join(BASE_DIR, 'data', 'indices', 'clt_chunks_mapped.json') 
+PATH_MAPPING_FILE = os.path.join(BASE_DIR, 'data', 'processed_data', 'clt_chunks.json') 
 
 # Modelos OpenAI
-LLM_MODEL_NAME = 'gpt-4o'
-LLM_MODEL_EXPANSION = 'gpt-3.5-turbo'
+LLM_MODEL_NAME = "sabia-3"
+LLM_MODEL_EXPANSION = "sabia-3"
 # ---------------------------------
 
-# --- (NOVO) Definição do Cérebro do Agente (V3.3 - Crítico) ---
+# ---  Definição do Cérebro do Agente  ---
 SYSTEM_PROMPT_AGENT = """
 Você é um Agente Jurídico especialista em Direito do Trabalho brasileiro.
 Sua tarefa é seguir um processo rigoroso de raciocínio para responder perguntas.
@@ -83,7 +83,7 @@ Sua tarefa é seguir um processo rigoroso de raciocínio para responder pergunta
 -   **NÃO GENERALIZE:** Se a regra for específica (ex: Art. 479), você DEVE dizer: "No caso de contratos por prazo determinado, a CLT, Art. 479, estabelece que..."
 """
 
-# --- (NOVO) Definição da Ferramenta do Agente (V3) ---
+# ---  Definição da Ferramenta do Agente  ---
 TOOL_BUSCAR_CLT = {
     "type": "function",
     "function": {
@@ -107,7 +107,7 @@ AGENT_TOOLS = [TOOL_BUSCAR_CLT]
 
 @st.cache_resource
 def load_all_resources():
-    logger.info("--- INICIANDO CARREGAMENTO DE RECURSOS (V4.1 - ChromaDB) ---")
+    logger.info("--- INICIANDO CARREGAMENTO DE RECURSOS  ---")
     
     # 1. Carregar .env
     logger.info(f"Carregando .env de {PATH_ENV_FILE}...")
@@ -131,7 +131,7 @@ def load_all_resources():
     embedding_model = SentenceTransformer(MODELO_EMBEDDING)
     logger.info("Modelo BGE-M3 carregado.")
 
-    # 5. Carregar Índice ChromaDB (NOVO)
+    # 5. Carregar Índice ChromaDB 
     logger.info(f"Conectando ao ChromaDB em {PATH_CHROMA_DB}...")
     client = chromadb.PersistentClient(path=PATH_CHROMA_DB)
     collection = client.get_collection(name=CHROMA_COLLECTION_NAME)
@@ -165,7 +165,7 @@ def preprocessar_query_bm25(texto: str, stopwords: set) -> list:
     return [token for token in tokens if token not in stopwords]
 
 def expandir_query_com_llm(query: str, openai_client: OpenAI) -> list:
-    logger.info(f"Expandindo query (V3.2/OpenAI): '{query}'")
+    logger.info(f"Expandindo query : '{query}'")
     system_prompt = """
     Você é um especialista em direito do trabalho brasileiro. Sua tarefa é analisar a pergunta do usuário
     e gerar 3 variações de busca para encontrar os artigos de lei corretos.
@@ -190,14 +190,14 @@ def expandir_query_com_llm(query: str, openai_client: OpenAI) -> list:
         novas_queries_str = response.choices[0].message.content
         novas_queries = [q.strip() for q in novas_queries_str.split(';') if q.strip()]
         todas_as_queries = [query] + [q for q in novas_queries if q not in [query]]
-        logger.info(f"Queries expandidas (V3.2): {todas_as_queries}")
+        logger.info(f"Queries expandidas : {todas_as_queries}")
         return todas_as_queries
     except Exception as e:
         logger.error(f"Erro ao expandir query (OpenAI): {e}. Usando apenas a query original.")
         return [query]
 
 def get_chroma_results(query: str, k: int = 10) -> dict:
-    """(ATUALIZADO) Busca no ChromaDB."""
+    """ Busca no ChromaDB."""
     _, _, embed_model, chroma_collection, _, _ = load_all_resources()
     
     query_com_instrucao = f"Represente esta frase para buscar passagens relevantes: {query}"
@@ -214,7 +214,7 @@ def get_chroma_results(query: str, k: int = 10) -> dict:
     return {str(idx): i for i, idx in enumerate(results['ids'][0])}
 
 def get_bm25_results(query: str, k: int = 10) -> dict:
-    """Busca no BM25. (ATENÇÃO: os IDs aqui são ints)"""
+    """Busca no BM25. (os IDs aqui são ints)"""
     stopwords, _, _, _, bm25_idx, _ = load_all_resources()
     query_bm25 = preprocessar_query_bm25(query, stopwords)
     scores_bm25 = bm25_idx.get_scores(query_bm25)
@@ -233,7 +233,7 @@ def fuse_rrf_results(list_of_rankings: list, k_rrf: int = 60) -> dict:
     return fused_scores
 
 def _execute_hybrid_rrf_search(queries: list, k: int = 5) -> tuple[list, str]:
-    """(ATUALIZADO) Executa a busca híbrida (Chroma + BM25) com RRF."""
+    """ Executa a busca híbrida (Chroma + BM25) com RRF."""
     _, chunks_map, _, _, _, _ = load_all_resources()
     log_busca = "Iniciando busca RAG-Fusion (V4.1 Chroma)...\n"
     log_busca += f"Queries Geradas: {queries}\n\n"
@@ -297,7 +297,7 @@ def formatar_contexto_para_llm(chunks: list) -> str:
     return contexto_str
 
 def tool_buscar_na_clt(pergunta: str) -> tuple[str, str]:
-    """(ATUALIZADO) Wrapper da ferramenta de busca (V4.1)."""
+    """ Wrapper da ferramenta de busca ."""
     logger.info(f"[Agente] Ferramenta 'tool_buscar_na_clt' ativada com a pergunta: '{pergunta}'")
     _, _, _, _, _, openai_client = load_all_resources()
     
@@ -309,7 +309,7 @@ def tool_buscar_na_clt(pergunta: str) -> tuple[str, str]:
     return contexto_str, log_busca
 
 def run_agent_loop(query: str, chat_history: list) -> tuple[str, str]:
-    """(ATUALIZADO) Gerencia o loop ReAct (V4.1 - OpenAI)."""
+    """ Gerencia o loop ReAct (OpenAI)."""
     _, _, _, _, _, openai_client = load_all_resources()
     log_de_busca = ""
     
@@ -366,10 +366,10 @@ def main():
         layout="centered"
     )
     
-    st.title("⚖️ Agente Trabalhista CLT (V4.1 - ChromaDB)")
+    st.title("⚖️ Agente Trabalhista CLT ")
     st.caption("Agente com GPT-4o e busca híbrida (BGE-M3 + BM25) em ChromaDB.")
 
-    with st.spinner("Carregando cérebro do agente (V4.1)..."):
+    with st.spinner("Carregando cérebro do agente ..."):
         load_all_resources()
 
     if "messages" not in st.session_state:
@@ -399,7 +399,7 @@ def main():
 
             resposta, log_busca = run_agent_loop(prompt, history_for_agent)
             
-            with st.expander("Ver Raciocínio do Agente (Debug V4.1)"):
+            with st.expander("Ver Raciocínio do Agente"):
                 st.text(log_busca)
 
             message_placeholder.markdown(resposta)

@@ -1,14 +1,6 @@
 """
-FASE 2 (ATUALIZAÇÃO CHROMA V2.4): Construtor de Índices BGE-M3 + ChromaDB
+FASE 2: Construtor de Índices BGE-M3 + ChromaDB
 ======================================================================
-
-Este script (V2.4) é "resumível". Se for interrompido (por hibernação, etc.),
-ele continuará de onde parou na próxima execução.
-
-Ele combina:
-1.  Processamento em lotes (V2.2).
-2.  Sanitização de metadados (V2.3).
-3.  Lógica de "resumo" (V2.4).
 """
 
 import json
@@ -28,7 +20,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # --- Configuração de Caminhos ---
-# (Mantendo os caminhos do seu Mac)
 BASE_DIR = r'/Users/universo369/Documents/UNIVERSO_369/U369_root/GARDEN SOLUTION/adicao_contabilidade/Sprint-I---Agente-Trabalhista'
 PATH_INPUT_CHUNKS = os.path.join(BASE_DIR, 'data', 'processed_data', 'clt_chunks.json') 
 MODELO_EMBEDDING = 'BAAI/bge-m3'
@@ -97,7 +88,7 @@ def criar_ou_atualizar_indice_chroma(chunks: list, model_name: str, output_path:
         # Inicializa o cliente ChromaDB
         client = chromadb.PersistentClient(path=output_path)
         
-        # (MUDANÇA V2.4) - Pega a coleção ou a cria. NÃO DELETA MAIS.
+        #  Pega a coleção ou a cria. NÃO DELETA MAIS.
         collection = client.get_or_create_collection(name=collection_name)
         
         # --- (MUDANÇA V2.4) LÓGICA DE RESUMO ---
@@ -111,7 +102,7 @@ def criar_ou_atualizar_indice_chroma(chunks: list, model_name: str, output_path:
         logger.info(f"A coleção contém {start_index} itens. Retomando a indexação do item {start_index}...")
         # --- FIM DA LÓGICA DE RESUMO ---
 
-        batch_size = 32
+        batch_size = 16
         logger.info(f"Gerando embeddings (BGE-M3) em lotes de {batch_size}...")
 
         # --- (MUDANÇA V2.4) Loop agora começa de 'start_index' ---
