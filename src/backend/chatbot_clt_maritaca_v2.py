@@ -232,7 +232,7 @@ def tool_buscar_na_clt(pergunta: str) -> tuple[str, str]:
     logger.info("[Agente] Busca concluída. Retornando contexto formatado para o LLM.")
     return contexto_str, log_busca
 
-# --- (ATUALIZADO) O Cérebro do Agente (V4.3 - Dupla Checagem) ---
+# --- O Cérebro do Agente (V4.3 - Dupla Checagem) ---
 def run_agent_loop(query: str, chat_history: list) -> tuple[str, str]:
     """
     Gerencia o loop de 3 etapas (Decidir -> Rascunhar -> Criticar)
