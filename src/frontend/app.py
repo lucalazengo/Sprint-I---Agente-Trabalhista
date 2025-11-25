@@ -153,7 +153,7 @@ def main():
         # Resposta do Assistente
         with st.chat_message("assistant"):
             placeholder = st.empty()
-            placeholder.markdown("⏳ *Por favor, aguarde enquanto consulto a legislação trabalhista...*")
+            placeholder.markdown("⏳ *Digitando...*")
 
             # Format history
             history = [
