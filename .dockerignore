@@ -1,0 +1,32 @@
+# Git and Docker files
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment variables (Secrets)
+.env
+src/backend/secrets/
+*.env
+
+# Logs and temp files
+*.log
+*.tmp
+data/raw_data/
+data/processed_data/eval_results.json
+terminals/
+
+# Mac system files
+.DS_Store
+

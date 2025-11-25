@@ -1,0 +1,64 @@
+{
+  "summary": {
+    "total_questions": 5,
+    "avg_correctness": 1.0,
+    "avg_faithfulness": 1.0
+  },
+  "details": [
+    {
+      "id": 1,
+      "pergunta": "O que é considerado horário noturno para o trabalhador urbano?",
+      "resposta_ia": "Para o trabalhador urbano, o horário noturno é considerado o período entre as 22 horas de um dia e as 5 horas do dia seguinte, conforme o Art. 73, § 2o da CLT (Decreto-Lei no 5.452/1943).",
+      "gabarito": "Para o trabalhador urbano, considera-se noturno o trabalho executado entre as 22 horas de um dia e as 5 horas do dia seguinte. A hora do trabalho noturno é computada como de 52 minutos e 30 segundos.",
+      "avaliacao": {
+        "corretude": 1.0,
+        "fidelidade": 1.0,
+        "justificativa": "A resposta da IA está totalmente correta em relação à resposta esperada, definindo o horário noturno para o trabalhador urbano conforme o Art. 73, § 2o da CLT. Além disso, não houve alucinações, pois a IA se baseou nos dados corretos e não inventou leis ou artigos."
+      }
+    },
+    {
+      "id": 2,
+      "pergunta": "Qual é o acréscimo salarial mínimo para horas extras?",
+      "resposta_ia": "O acréscimo salarial mínimo para horas extras é de 50% sobre o salário-hora normal, conforme o Art. 59, § 1o da CLT (Decreto-Lei no 5.452/1943). Este artigo estabelece que a remuneração da hora extra deve ser, no mínimo, 50% superior à da hora normal.",
+      "gabarito": "A remuneração do serviço extraordinário (horas extras) deve ser superior, no mínimo, em 50% (cinquenta por cento) à do normal.",
+      "avaliacao": {
+        "corretude": 1.0,
+        "fidelidade": 1.0,
+        "justificativa": "A resposta da IA está totalmente correta em relação à resposta esperada, indicando que o acréscimo salarial mínimo para horas extras é de 50% sobre o salário-hora normal, conforme o Art. 59, § 1o da CLT. Não há alucinações, pois a IA se baseou nos artigos corretos e não inventou leis ou artigos."
+      }
+    },
+    {
+      "id": 3,
+      "pergunta": "Quantos dias de férias o empregado tem direito após cada período de 12 meses de vigência do contrato de trabalho?",
+      "resposta_ia": "Após cada período de 12 meses de vigência do contrato de trabalho, o empregado tem direito a férias na seguinte proporção, conforme o Art. 130 da CLT (Decreto-Lei no 5.452/1943):\n\n- 30 dias corridos, quando não houver faltado ao serviço mais de 5 vezes;\n- 24 dias corridos, quando houver tido de 6 a 14 faltas;\n- 18 dias corridos, quando houver tido de 15 a 23 faltas;\n- 12 dias corridos, quando houver tido de 24 a 32 faltas.\n\nFonte: Art. 130 da CLT (Decreto-Lei no 5.452/1943).",
+      "gabarito": "Após cada período de 12 meses de vigência do contrato de trabalho, o empregado tem direito a férias na seguinte proporção: 30 dias corridos, quando não houver faltado ao serviço mais de 5 vezes; 24 dias corridos, quando houver tido de 6 a 14 faltas; 18 dias corridos, quando houver tido de 15 a 23 faltas; e 12 dias corridos, quando houver tido de 24 a 32 faltas.",
+      "avaliacao": {
+        "corretude": 1.0,
+        "fidelidade": 1.0,
+        "justificativa": "A resposta da IA está totalmente correta em relação à resposta esperada, citando precisamente o Art. 130 da CLT, sem adicionar informações incorretas ou inventadas."
+      }
+    },
+    {
+      "id": 4,
+      "pergunta": "O que é o aviso prévio?",
+      "resposta_ia": "O aviso prévio é um período de comunicação obrigatória que deve ser cumprido quando uma das partes, empregador ou empregado, deseja rescindir o contrato de trabalho sem justo motivo. Conforme o Art. 487 da CLT (Decreto-Lei no 5.452/1943), a antecedência mínima do aviso é de oito dias para pagamentos semanais ou inferiores, e de trinta dias para pagamentos quinzenais, mensais, ou para empregados com mais de doze meses de serviço na empresa. A falta de aviso prévio por parte do empregador garante ao empregado o direito aos salários correspondentes ao período do aviso, integrando esse tempo no serviço (§ 1o). Por outro lado, a falta de aviso prévio pelo empregado permite ao empregador descontar os salários correspondentes (§ 2o). O aviso prévio também é devido na despedida indireta (§ 4o) e integra horas extraordinárias habituais (§ 5o). Além disso, o aviso prévio pode ser proporcional ao tempo de serviço, podendo chegar até 90 dias, conforme o Art. 1o do Título XI da CLT.",
+      "gabarito": "O aviso prévio é a comunicação da ruptura do contrato de trabalho por uma das partes, empregador ou empregado, que decide extingui-lo, com a antecedência que a lei determina.",
+      "avaliacao": {
+        "corretude": 1.0,
+        "fidelidade": 1.0,
+        "justificativa": "A resposta da IA está totalmente correta em relação à resposta esperada, abordando o conceito de aviso prévio e suas implicações conforme a CLT. Além disso, não há alucinações, pois a IA cita corretamente os artigos da legislação pertinente sem inventar leis ou artigos."
+      }
+    },
+    {
+      "id": 5,
+      "pergunta": "Gestantes têm estabilidade no emprego?",
+      "resposta_ia": "Sim, gestantes têm estabilidade no emprego conforme o Art. 391-A da CLT (Decreto-Lei no 5.452/1943). A confirmação do estado de gravidez durante o contrato de trabalho, mesmo que durante o aviso prévio, garante à empregada gestante a estabilidade provisória prevista na alínea \"b\" do inciso II do art. 10 do Ato das Disposições Constitucionais Transitórias. Essa estabilidade também se aplica ao empregado adotante ao qual tenha sido concedida guarda provisória para fins de adoção. Fonte: CLT, Art. 391-A.",
+      "gabarito": "Sim, a empregada gestante tem direito à estabilidade provisória desde a confirmação da gravidez até cinco meses após o parto, sendo vedada a dispensa arbitrária ou sem justa causa.",
+      "avaliacao": {
+        "corretude": 1.0,
+        "fidelidade": 1.0,
+        "justificativa": "A resposta da IA está totalmente correta em relação à resposta esperada, mencionando a estabilidade provisória da gestante conforme o Art. 391-A da CLT e o artigo 10, inciso II, alínea 'b' do ADCT. Não houve alucinações, pois a IA se baseou nos artigos legais corretos e pertinentes ao contexto fornecido."
+      }
+    }
+  ]
+}

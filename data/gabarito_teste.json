@@ -1,0 +1,28 @@
+[
+    {
+        "id": 1,
+        "pergunta": "O que é considerado horário noturno para o trabalhador urbano?",
+        "resposta_esperada": "Para o trabalhador urbano, considera-se noturno o trabalho executado entre as 22 horas de um dia e as 5 horas do dia seguinte. A hora do trabalho noturno é computada como de 52 minutos e 30 segundos."
+    },
+    {
+        "id": 2,
+        "pergunta": "Qual é o acréscimo salarial mínimo para horas extras?",
+        "resposta_esperada": "A remuneração do serviço extraordinário (horas extras) deve ser superior, no mínimo, em 50% (cinquenta por cento) à do normal."
+    },
+    {
+        "id": 3,
+        "pergunta": "Quantos dias de férias o empregado tem direito após cada período de 12 meses de vigência do contrato de trabalho?",
+        "resposta_esperada": "Após cada período de 12 meses de vigência do contrato de trabalho, o empregado tem direito a férias na seguinte proporção: 30 dias corridos, quando não houver faltado ao serviço mais de 5 vezes; 24 dias corridos, quando houver tido de 6 a 14 faltas; 18 dias corridos, quando houver tido de 15 a 23 faltas; e 12 dias corridos, quando houver tido de 24 a 32 faltas."
+    },
+    {
+        "id": 4,
+        "pergunta": "O que é o aviso prévio?",
+        "resposta_esperada": "O aviso prévio é a comunicação da ruptura do contrato de trabalho por uma das partes, empregador ou empregado, que decide extingui-lo, com a antecedência que a lei determina."
+    },
+    {
+        "id": 5,
+        "pergunta": "Gestantes têm estabilidade no emprego?",
+        "resposta_esperada": "Sim, a empregada gestante tem direito à estabilidade provisória desde a confirmação da gravidez até cinco meses após o parto, sendo vedada a dispensa arbitrária ou sem justa causa."
+    }
+]
+

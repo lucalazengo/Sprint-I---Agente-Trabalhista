@@ -11,27 +11,23 @@ ESTRATÉGIA DE CHUNKING:
 - Metadados estruturados para recuperação eficiente
 
 Autor: Garden Solutions
+Refactored for MLOps Standards
 """
 
 import os
 import re
 import json
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+import argparse
+from typing import Dict, List, Optional, Any
 from pathlib import Path
 import PyPDF2
 
-# Configuração de logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('clt_chunking_log.txt'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+# Import centralized config
+from src.utils import config
 
+# Configuração de logging
+logger = logging.getLogger(__name__)
 
 class CLTChunker:
     """
@@ -121,17 +117,11 @@ class CLTChunker:
         
         logger.info("CLT Chunker inicializado com padrões de identificação")
     
-    def extract_text_from_pdf(self, pdf_path: str) -> str:
+    def extract_text_from_pdf(self, pdf_path: Path) -> str:
         """
         Extrai texto completo de um arquivo PDF.
-        
-        Args:
-            pdf_path (str): Caminho para o arquivo PDF
-            
-        Returns:
-            str: Texto extraído do PDF
         """
-        if not os.path.exists(pdf_path):
+        if not pdf_path.exists():
             raise FileNotFoundError(f"Arquivo PDF não encontrado: {pdf_path}")
         
         try:
@@ -166,21 +156,12 @@ class CLTChunker:
             raise
     
     def identify_structure_hierarchy(self, text: str) -> List[Dict[str, Any]]:
-        """
-        Identifica a hierarquia estrutural do documento.
-        
-        Args:
-            text (str): Texto completo do documento
-            
-        Returns:
-            List[Dict]: Lista de elementos estruturais identificados
-        """
+        """Identifica a hierarquia estrutural do documento."""
         structure = []
         lines = text.split('\n')
         
         current_titulo = None
         current_capitulo = None
-        current_secao = None
         
         for i, line in enumerate(lines):
             line_clean = line.strip()
@@ -195,7 +176,6 @@ class CLTChunker:
                     'tipo': 'titulo'
                 }
                 current_capitulo = None
-                current_secao = None
                 structure.append(current_titulo)
                 continue
             
@@ -209,7 +189,6 @@ class CLTChunker:
                     'tipo': 'capitulo',
                     'titulo': current_titulo
                 }
-                current_secao = None
                 structure.append(current_capitulo)
                 continue
             
@@ -233,12 +212,6 @@ class CLTChunker:
         """
         Extrai conteúdo completo de um artigo incluindo subelementos.
         Preserva toda a estrutura do artigo (caput, parágrafos, incisos, alíneas).
-        
-        Args:
-            article_text: Texto completo do artigo (incluindo "Art. X")
-            
-        Returns:
-            Dict com conteúdo completo do artigo
         """
         # Normaliza o texto primeiro
         article_text = article_text.strip()
@@ -303,15 +276,7 @@ class CLTChunker:
         }
     
     def determine_status_legal(self, conteudo: str) -> str:
-        """
-        Determina o status legal de um dispositivo.
-        
-        Args:
-            conteudo (str): Conteúdo do artigo/dispositivo
-            
-        Returns:
-            str: Status legal ("Em vigor", "Revogado", "Vetado")
-        """
+        """Determina o status legal de um dispositivo."""
         if self.patterns['status_revogado'].search(conteudo):
             return "Revogado"
         elif self.patterns['status_vetado'].search(conteudo):
@@ -319,51 +284,8 @@ class CLTChunker:
         else:
             return "Em vigor"
     
-    def get_hierarchical_context(self, article_start_pos: int, structure: List[Dict]) -> Dict[str, Optional[str]]:
-        """
-        Obtém o contexto hierárquico para um artigo baseado na estrutura.
-        
-        Args:
-            article_start_pos: Posição aproximada do artigo no texto
-            structure: Lista de elementos estruturais
-            
-        Returns:
-            Dict com contexto hierárquico
-        """
-        context = {
-            'titulo_clt': None,
-            'capitulo_secao': None
-        }
-        
-        # Encontra o título mais recente antes deste artigo
-        for struct in structure:
-            if struct['tipo'] == 'titulo':
-                context['titulo_clt'] = f"Título {struct['numero']} – {struct['nome']}"
-            elif struct['tipo'] == 'capitulo':
-                capitulo_nome = f"Capítulo {struct['numero']} – {struct['nome']}"
-                if struct.get('secao'):
-                    secao_nome = f", Seção {struct['secao']['numero']} – {struct['secao']['nome']}"
-                    context['capitulo_secao'] = capitulo_nome + secao_nome
-                else:
-                    context['capitulo_secao'] = capitulo_nome
-            elif struct['tipo'] == 'secao':
-                if context['capitulo_secao']:
-                    context['capitulo_secao'] += f", Seção {struct['numero']} – {struct['nome']}"
-                else:
-                    context['capitulo_secao'] = f"Seção {struct['numero']} – {struct['nome']}"
-        
-        return context
-    
-    def process_clt_document(self, pdf_path: str) -> List[Dict[str, Any]]:
-        """
-        Processa o documento completo da CLT e gera chunks.
-        
-        Args:
-            pdf_path (str): Caminho para o arquivo PDF
-            
-        Returns:
-            List[Dict]: Lista de chunks estruturados
-        """
+    def process_clt_document(self, pdf_path: Path) -> List[Dict[str, Any]]:
+        """Processa o documento completo da CLT e gera chunks."""
         logger.info(f"Iniciando processamento do documento: {pdf_path}")
         
         # Extrai texto
@@ -510,16 +432,9 @@ class CLTChunker:
         logger.info(f"Processamento concluído. Gerados {len(chunks)} chunks")
         return chunks
     
-    def save_chunks_to_json(self, chunks: List[Dict[str, Any]], output_path: str):
-        """
-        Salva chunks em arquivo JSON.
-        
-        Args:
-            chunks: Lista de chunks
-            output_path: Caminho do arquivo de saída
-        """
-        # Garante que o diretório existe
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    def save_chunks_to_json(self, chunks: List[Dict[str, Any]], output_path: Path):
+        """Salva chunks em arquivo JSON."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(chunks, f, ensure_ascii=False, indent=2)
@@ -529,32 +444,38 @@ class CLTChunker:
 
 
 def main():
-    """Função principal para execução standalone."""
-    import sys
+    """Função principal para execução via CLI."""
+    parser = argparse.ArgumentParser(description="Processador de PDF da CLT para Chunks JSON")
+    parser.add_argument("--pdf", help="Caminho do PDF de entrada", type=Path)
+    parser.add_argument("--output", help="Caminho do JSON de saída", type=Path, default=config.PATH_MAPPING_FILE)
     
-    # Caminhos
-    pdf_path = r"C:\Users\mlzengo\Documents\Garden Solutions\Adicao_Contabilidade\Sprint I\data\raw_data\clt_e_normas_correlatas_1ed - 16-192.pdf"
-    output_path = r"C:\Users\mlzengo\Documents\Garden Solutions\Adicao_Contabilidade\Sprint I\data\processed_data\clt_chunks.json"
+    args = parser.parse_args()
     
-    if len(sys.argv) > 1:
-        pdf_path = sys.argv[1]
-    if len(sys.argv) > 2:
-        output_path = sys.argv[2]
-    
+    # Default to finding the PDF in raw_data if not provided
+    if not args.pdf:
+        # Try to find any PDF in raw_data that looks like CLT
+        pdfs = list(config.RAW_DATA_DIR.glob("*.pdf"))
+        if pdfs:
+            args.pdf = pdfs[0]
+            logger.info(f"Nenhum PDF especificado. Usando encontrado: {args.pdf}")
+        else:
+            logger.error("Nenhum arquivo PDF encontrado em raw_data e nenhum argumento fornecido.")
+            return
+
     try:
         chunker = CLTChunker()
-        chunks = chunker.process_clt_document(pdf_path)
-        chunker.save_chunks_to_json(chunks, output_path)
+        chunks = chunker.process_clt_document(args.pdf)
+        chunker.save_chunks_to_json(chunks, args.output)
         
         print(f"\n=== PROCESSAMENTO CONCLUÍDO ===")
         print(f"Total de chunks gerados: {len(chunks)}")
-        print(f"Arquivo salvo em: {output_path}")
+        print(f"Arquivo salvo em: {args.output}")
         
     except Exception as e:
         logger.error(f"Erro durante execução: {e}")
+        import sys
         sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
-
