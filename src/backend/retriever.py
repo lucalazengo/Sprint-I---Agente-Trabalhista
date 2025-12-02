@@ -2,8 +2,8 @@
 Retriever Module
 ================
 Handles the retrieval of relevant context from the knowledge base (CLT).
-Implements Hybrid Search (BM25 + ChromaDB) with Reciprocal Rank Fusion (RRF)
-and Query Expansion.
+Implements Hybrid Search (BM25 + ChromaDB) with Reciprocal Rank Fusion (RRF),
+Query Expansion, and Re-Ranking (Cross-Encoder).
 """
 
 import pickle
@@ -13,7 +13,7 @@ import logging
 import numpy as np
 import chromadb
 from typing import List, Dict, Tuple, Any
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 from rank_bm25 import BM25Okapi
 from openai import OpenAI
 
@@ -26,14 +26,21 @@ class Retriever:
     def __init__(self, llm_client: OpenAI = None):
         """
         Initialize the Retriever with necessary resources.
-        lazy_load=True strategy could be implemented here for faster startup.
         """
         self.llm_client = llm_client
         self.stopwords = self._load_stopwords()
         self.chunks_map = self._load_chunks_map()
         self.bm25_index = self._load_bm25()
         self.chroma_collection = self._load_chroma()
+        
+        # Embeddings for Retrieval
         self.embed_model = SentenceTransformer(config.MODEL_EMBEDDING)
+        
+        # Re-Ranker Model (Lightweight Cross-Encoder)
+        # Using ms-marco-MiniLM-L-6-v2 for speed/performance balance on CPU
+        logger.info("Loading Re-Ranker Model...")
+        self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+        
         logger.info("Retriever initialized successfully.")
 
     def _load_stopwords(self):
@@ -132,50 +139,66 @@ class Retriever:
     def hybrid_search(self, query: str, k: int = 5) -> Tuple[List[Dict], str]:
         """
         Executes the full hybrid search pipeline: 
-        Expansion -> Search (Vector+Keyword) -> RRF Fusion -> Ranking
+        Expansion -> Search (Vector+Keyword) -> RRF Fusion -> RE-RANKING -> Final Top K
         """
+        # 1. Expansion & Initial Retrieval (Broader Scope: 3x K)
+        k_retrieval = k * 3 
         queries = self.expand_query(query)
         log_msg = f"Hybrid Search initiated with queries: {queries}\n"
 
-        all_chroma_ranks = [self.search_chroma(q) for q in queries]
-        all_bm25_ranks = [self.search_bm25(q) for q in queries]
-
-        # Fuse ranks within each method first? Or all together? 
-        # Original code fused "all chroma" then "all bm25" then combined those two.
-        # We will stick to the proven original logic for now.
+        all_chroma_ranks = [self.search_chroma(q, k=k_retrieval) for q in queries]
+        all_bm25_ranks = [self.search_bm25(q, k=k_retrieval) for q in queries]
         
         chroma_fused = self.fuse_results(all_chroma_ranks)
         bm25_fused = self.fuse_results(all_bm25_ranks)
 
-        # Re-rank based on fusion scores to get simple rank dicts
-        final_chroma_ranks = {doc_id: i for i, (doc_id, _) in enumerate(sorted(chroma_fused.items(), key=lambda x: x[1], reverse=True))}
-        final_bm25_ranks = {doc_id: i for i, (doc_id, _) in enumerate(sorted(bm25_fused.items(), key=lambda x: x[1], reverse=True))}
-
-        # Final Hybrid Fusion
-        all_ids = set(final_chroma_ranks.keys()).union(set(final_bm25_ranks.keys()))
-        final_scores = {}
+        # RRF Combination
+        all_ids = set(chroma_fused.keys()).union(set(bm25_fused.keys()))
+        rrf_scores = {}
         
         for doc_id in all_ids:
             score = 0
-            if doc_id in final_chroma_ranks:
-                score += 1.0 / (60 + final_chroma_ranks[doc_id])
-            if doc_id in final_bm25_ranks:
-                score += 1.0 / (60 + final_bm25_ranks[doc_id])
-            final_scores[doc_id] = score
+            if doc_id in chroma_fused:
+                score += chroma_fused[doc_id]
+            if doc_id in bm25_fused:
+                score += bm25_fused[doc_id]
+            rrf_scores[doc_id] = score
 
-        # Sort and retrieve contents
-        sorted_ids = sorted(final_scores.keys(), key=lambda x: final_scores[x], reverse=True)[:k]
+        # Get Top Candidates for Re-Ranking (e.g., Top 15)
+        sorted_candidates_ids = sorted(rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True)[:k_retrieval]
         
-        results = []
-        for i, doc_id in enumerate(sorted_ids):
+        candidates = []
+        candidate_indices = []
+        
+        for doc_id in sorted_candidates_ids:
             try:
-                # Map string ID back to int index for the list
-                chunk_idx = int(doc_id)
-                chunk = self.chunks_map[chunk_idx]
-                results.append(chunk)
-                log_msg += f"  - Rank {i+1}: {chunk.get('artigo_numero')} (Score: {final_scores[doc_id]:.4f})\n"
-            except (IndexError, ValueError) as e:
-                logger.error(f"Error retrieving chunk {doc_id}: {e}")
+                chunk = self.chunks_map[int(doc_id)]
+                candidates.append(chunk['conteudo_chunk'])
+                candidate_indices.append(int(doc_id))
+            except:
+                continue
+                
+        if not candidates:
+            return [], "No candidates found."
 
-        return results, log_msg
+        # 2. Re-Ranking (Cross-Encoder)
+        log_msg += f"\n--- Re-Ranking (Cross-Encoder) ---\n"
+        log_msg += f"Re-ranking top {len(candidates)} candidates...\n"
+        
+        # Form pairs (Query, Document)
+        pairs = [[query, doc] for doc in candidates]
+        cross_scores = self.reranker.predict(pairs)
+        
+        # Sort by Cross-Encoder Score
+        # Zip indices, scores, and original text
+        scored_candidates = list(zip(candidate_indices, cross_scores))
+        scored_candidates.sort(key=lambda x: x[1], reverse=True)
+        
+        # Select Final Top K
+        final_results = []
+        for idx, score in scored_candidates[:k]:
+            chunk = self.chunks_map[idx]
+            final_results.append(chunk)
+            log_msg += f"  - Rank {len(final_results)}: {chunk.get('artigo_numero')} (Re-Rank Score: {score:.4f})\n"
 
+        return final_results, log_msg

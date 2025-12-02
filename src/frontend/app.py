@@ -11,12 +11,19 @@ import streamlit as st
 from src.backend.agent import LaborLawAgent
 from src.utils import config
 
+import uuid
+from src.utils import analytics
+
 # Page Config
 st.set_page_config(
     page_title="Agente Trabalhista",
     page_icon="💬",
     layout="centered"
 )
+
+# Session ID para Analytics
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
 
 # --- CSS Personalizado ---
 st.markdown("""
@@ -164,12 +171,28 @@ def main():
             # Run Agent
             response, log_trace = st.session_state.agent.run(prompt, history)
 
-            # Display Log (Debug) is DISABLED for Production MVP
-            # if log_trace:
-            #     with st.expander("🔍 Detalhes da Pesquisa"):
-            #         st.code(log_trace, language='text')
-
+            # --- ANALYTICS & FEEDBACK LOOP ---
+            # 1. Log the interaction to our "Queue"
+            interaction_id = analytics.log_interaction(
+                question=prompt,
+                response=response,
+                retrieved_chunks=[], # We could extract this from log_trace if needed, skipping for MVP speed
+                session_id=st.session_state.session_id
+            )
+            
             placeholder.markdown(response)
+            
+            # 2. Add Feedback UI (Thumbs Up/Down)
+            col1, col2, _ = st.columns([1, 1, 8])
+            with col1:
+                if st.button("👍", key=f"like_{interaction_id}"):
+                    analytics.log_feedback(interaction_id, 1)
+                    st.toast("Obrigado pelo feedback!")
+            with col2:
+                if st.button("👎", key=f"dislike_{interaction_id}"):
+                    analytics.log_feedback(interaction_id, 0)
+                    st.toast("Feedback registrado. Vamos melhorar!")
+
             st.session_state.messages.append({"role": "assistant", "content": response})
 
 if __name__ == "__main__":

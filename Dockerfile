@@ -1,43 +1,67 @@
-# Use an official Python runtime as a parent image
-# Slim version to reduce size
-FROM python:3.11-slim
+# ==========================================
+# Stage 1: Builder (Compile dependencies)
+# ==========================================
+FROM python:3.11-slim as builder
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
-
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
-    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-# We copy requirements first to leverage Docker cache
 COPY requirements.txt .
 
-# Install dependencies
-# Note: We force CPU-only torch to save space (critical for cloud deployments)
-RUN pip install --no-cache-dir torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir -r requirements.txt
+# Force CPU-only Torch to save ~700MB
+# We install to a specific user directory to copy later
+RUN pip install --user --no-cache-dir torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --user --no-cache-dir -r requirements.txt
 
-# Download NLTK data (Stopwords)
-RUN python -c "import nltk; nltk.download('stopwords')"
+# ==========================================
+# Stage 2: Runtime (Final Image)
+# ==========================================
+FROM python:3.11-slim as runtime
 
-# Copy the rest of the application
+# Security: Run as non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH=/root/.local/bin:$PATH
+
+WORKDIR /app
+
+# Install runtime system dependencies (minimal)
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed python packages from builder stage
+COPY --from=builder /root/.local /root/.local
+
+# Download NLTK data
+RUN python3 -c "import nltk; nltk.download('stopwords')"
+
+# Copy application code
 COPY . .
 
-# Expose the port Streamlit runs on
+# Create directory for logs/data ensuring write permissions for appuser
+RUN mkdir -p data/processed_data && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose Streamlit port
 EXPOSE 8501
 
-# Healthcheck to ensure the app is running
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
-# Command to run the app
-CMD ["streamlit", "run", "src/frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
-
+# Launch
+CMD ["python3", "-m", "streamlit", "run", "src/frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]

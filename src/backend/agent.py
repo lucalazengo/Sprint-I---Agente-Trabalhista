@@ -95,8 +95,10 @@ class LaborLawAgent:
         messages = [{"role": "system", "content": SYSTEM_PROMPT_AGENT}]
         
         # Add history to context (Memory)
-        # Limit history to last 6 turns to fit context window if needed, but Sabia-3 has good context.
-        messages.extend(chat_history)
+        # Memory: Keep the last 20 messages (approx. 10 interactions) to maintain context without overflow
+        # The user requested "at least 10 messages", so 20 covers 10 interactions fully.
+        recent_history = chat_history[-20:] if len(chat_history) > 20 else chat_history
+        messages.extend(recent_history)
         
         messages.append({"role": "user", "content": query})
 
