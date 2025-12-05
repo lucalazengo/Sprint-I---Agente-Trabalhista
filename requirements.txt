@@ -1,20 +1,26 @@
+# Core processing
 numpy==1.26.4
-torch==2.2.0
-transformers==4.36.2
-sentence-transformers==2.7.0
-
-chromadb==0.5.0
-rank-bm25==0.2.2
-nltk==3.9.1
-
-streamlit==1.31.0
 pandas==2.1.4
 pyarrow==15.0.2
 
-python-dotenv==1.0.1
-protobuf==4.25.3
-requests==2.32.3
+# NLP & AI Models
+# torch is installed separately in Dockerfile for CPU-only (saves space)
+transformers==4.36.2
+sentence-transformers==2.7.0
+nltk==3.9.1
 openai==1.55.3
 
+# Vector DB & Search
+chromadb==0.5.0
+rank-bm25==0.2.2
+
+# App Framework
+streamlit==1.31.0
+watchdog>=4.0.0  # Better performance for Streamlit
+
+# Utilities
+python-dotenv==1.0.1
+requests==2.32.3
+protobuf==4.25.3
 typing-extensions==4.12.2
 aiohttp==3.9.5
