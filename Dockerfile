@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Builder (Compile dependencies)
 # ==========================================
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ RUN python -c "import nltk; nltk.download('stopwords', download_dir='/opt/nltk_d
 # ==========================================
 # Stage 2: Runtime (Final Image)
 # ==========================================
-FROM python:3.11-slim as runtime
+FROM python:3.11-slim AS runtime
 
 # Security: Run as non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
@@ -53,6 +53,10 @@ COPY --from=builder /opt/nltk_data /opt/nltk_data
 # Copy application code
 COPY . .
 
+# Copy entrypoint script and make executable
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
 # Create directory for logs/data ensuring write permissions for appuser
 RUN mkdir -p data/processed_data && \
     chown -R appuser:appuser /app
@@ -62,10 +66,6 @@ USER appuser
 
 # Expose Streamlit port
 EXPOSE 8501
-
-# Copy entrypoint script and make executable
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=3 \
