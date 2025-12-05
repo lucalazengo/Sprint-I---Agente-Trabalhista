@@ -14,10 +14,16 @@ RUN apt-get update && apt-get install -y \
 # Install Python dependencies
 COPY requirements.txt .
 
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Force CPU-only Torch to save ~700MB
-# We install to a specific user directory to copy later
-RUN pip install --user --no-cache-dir torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Download NLTK data to a specific directory
+RUN python -c "import nltk; nltk.download('stopwords', download_dir='/opt/nltk_data')"
 
 # ==========================================
 # Stage 2: Runtime (Final Image)
@@ -30,8 +36,8 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app \
-    PATH=/root/.local/bin:$PATH
+    PATH="/opt/venv/bin:$PATH" \
+    NLTK_DATA="/opt/nltk_data"
 
 WORKDIR /app
 
@@ -40,11 +46,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed python packages from builder stage
-COPY --from=builder /root/.local /root/.local
-
-# Download NLTK data
-RUN python3 -c "import nltk; nltk.download('stopwords')"
+# Copy virtual environment and NLTK data from builder
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /opt/nltk_data /opt/nltk_data
 
 # Copy application code
 COPY . .
@@ -63,5 +67,5 @@ EXPOSE 8501
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
-# Launch
-CMD ["python3", "-m", "streamlit", "run", "src/frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Launch with dynamic port support for Easypanel
+CMD ["sh", "-c", "python -m streamlit run src/frontend/app.py --server.port=${PORT:-8501} --server.address=0.0.0.0"]
