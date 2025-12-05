@@ -63,9 +63,13 @@ USER appuser
 # Expose Streamlit port
 EXPOSE 8501
 
+# Copy entrypoint script and make executable
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=3 \
     CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
-# Launch with dynamic port support for Easypanel
-CMD ["sh", "-c", "python -m streamlit run src/frontend/app.py --server.port=${PORT:-8501} --server.address=0.0.0.0"]
+# Launch with entrypoint for self-healing indices
+CMD ["./entrypoint.sh"]
